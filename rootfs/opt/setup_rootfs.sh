@@ -61,7 +61,7 @@ if grep "ubuntu.com" /etc/apt/sources.list > /dev/null; then
   gpg -n -q --import --import-options import-show /etc/apt/keyrings/packages.mozilla.org.asc | awk '/pub/{getline; gsub(/^ +| +$/,""); if($0 == "35BAA0B33E9EB396F59CA838C0BA5CE6DC6315A3") print "\nThe key fingerprint matches ("$0").\n"; else print "\nVerification failed: the fingerprint ("$0") does not match the expected one.\n"}' 
   echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main" >> /etc/apt/sources.list.d/mozilla.list
   echo '
-Package: firefox-beta
+Package: *
 Pin: origin packages.mozilla.org
 Pin-Priority: 1000
 ' > /etc/apt/preferences.d/mozilla 
@@ -81,7 +81,7 @@ systemctl enable kill-frecon.service
 
 #install base packages
 if [ ! "$disable_base_pkgs" ]; then
-  apt-get install -y zram-tools sudo command-not-found libfuse2 libfuse3-3
+  apt-get install -y zram-tools sudo command-not-found libfuse2 libfuse3-3 nomacs
   # Removed: cloud-utils, bash-completions
 
   #set up zram
@@ -95,7 +95,8 @@ if [ ! "$disable_base_pkgs" ]; then
     apt-get update
   fi
 fi
-
+# also remove Debian packages as they're not usually used by regular normal people
+apt-get remove -y --purge $(dpkg --get-selections | grep -E 'libreoffice|imagemagick' | awk '{print $1}')
 #set up hostname and username
 if [ ! "$hostname" ]; then
   read -p "Enter the hostname for the system: " hostname
@@ -146,6 +147,7 @@ set_password "$username" "$user_passwd"
 
 #clean apt caches
 apt-get clean
+apt-get -y autoremove
 
 #enable bash greeter
 echo "/usr/local/bin/shimboot_greeter" >> "/home/$username/.bashrc" 
